@@ -113,6 +113,7 @@ func (seg *ReportSegment) AvgBody() float64 {
 type Report struct {
 	Segments   []*ReportSegment
 	Aggregates []*regexp.Regexp
+	Since      time.Time
 }
 
 func (r *Report) String() string {
@@ -145,6 +146,7 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 		Rows       [][]string
 		ReportPath string
 		Aggregates string
+		Since      string
 	}{}
 	data.ReportPath = reportPath
 	data.Header = []string{"STATUS", "METHOD", "PATH", "COUNT", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "SUM(BODY)", "AVG(BODY)"}
@@ -171,6 +173,7 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 		}
 		data.Aggregates = strings.Join(aggs, ",")
 	}
+	data.Since = r.Since.String()
 
 	return htmlTemplate.Execute(w, data)
 }
@@ -190,6 +193,7 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
   </head>
   <body>
     <div>
+      <p>Since {{ .Since }}</p>
       <table id="foo-table" class="table table-bordered">
         <thead>
           <tr>

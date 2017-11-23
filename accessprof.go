@@ -17,6 +17,7 @@ type AccessLog struct {
 	Status           int
 	ResponseBodySize int
 	ResponseTime     time.Duration
+	AccessedAt       time.Time
 }
 
 type Handler struct {
@@ -42,6 +43,7 @@ func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Method:          r.Method,
 		Path:            r.URL.Path,
 		RequestBodySize: r.ContentLength,
+		AccessedAt:      time.Now(),
 	}
 	start := time.Now()
 	wrapped := responseWriter{w: w}
@@ -62,11 +64,18 @@ func (a *Handler) Count() int {
 }
 
 func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
-	var segs []*ReportSegment
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	var (
+		segs  []*ReportSegment
+		since time.Time
+	)
+
 	for _, l := range a.accessLogs {
+		if since.IsZero() || since.After(l.AccessedAt) {
+			since = l.AccessedAt
+		}
 		newsegment := true
 		for _, seg := range segs {
 			if seg.match(l) {
@@ -92,7 +101,7 @@ func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
 		}
 	}
 
-	return &Report{Segments: segs, Aggregates: aggregates}
+	return &Report{Segments: segs, Aggregates: aggregates, Since: since}
 }
 
 func (a *Handler) Reset() {
