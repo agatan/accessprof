@@ -193,7 +193,7 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
   </head>
   <body>
     <div>
-      <p>Since {{ .Since }}</p>
+      <p>Get {{ len .Rows }} requests (Since {{ .Since }})</p>
       <table id="foo-table" class="table table-bordered">
         <thead>
           <tr>
