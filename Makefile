@@ -5,5 +5,5 @@ test: $(SRCS)
 	@echo "Testing..."
 	@go test
 	@echo "Run Example..."
-	@go run _example/example.go
+	@go run _example/asstring.go
 
