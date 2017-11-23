@@ -15,7 +15,7 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 })
 
 func main() {
-	handler := &accessprof.AccessProf{Handler: exampleHandler}
+	handler := &accessprof.Handler{Handler: exampleHandler}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/accessprof/", func(w http.ResponseWriter, _ *http.Request) {
 		if err := handler.MakeReport(nil).RenderHTML(w); err != nil {

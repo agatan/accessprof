@@ -16,13 +16,13 @@ type AccessLog struct {
 	ResponseTime     time.Duration
 }
 
-type AccessProf struct {
+type Handler struct {
 	mu         sync.Mutex
 	accessLogs []*AccessLog
 	Handler    http.Handler
 }
 
-func (a *AccessProf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l := &AccessLog{
 		Method:          r.Method,
 		Path:            r.URL.Path,
@@ -39,14 +39,14 @@ func (a *AccessProf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mu.Unlock()
 }
 
-func (a *AccessProf) Count() int {
+func (a *Handler) Count() int {
 	a.mu.Lock()
 	n := len(a.accessLogs)
 	a.mu.Unlock()
 	return n
 }
 
-func (a *AccessProf) MakeReport(aggregates []*regexp.Regexp) *Report {
+func (a *Handler) MakeReport(aggregates []*regexp.Regexp) *Report {
 	var segs []*ReportSegment
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -80,7 +80,7 @@ func (a *AccessProf) MakeReport(aggregates []*regexp.Regexp) *Report {
 	return &Report{Segments: segs}
 }
 
-func (a *AccessProf) Reset() {
+func (a *Handler) Reset() {
 	a.mu.Lock()
 	a.accessLogs = a.accessLogs[:0]
 	a.mu.Unlock()
