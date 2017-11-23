@@ -3,6 +3,7 @@ package accessprof
 import (
 	"bytes"
 	"math"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -12,12 +13,19 @@ import (
 type ReportSegment struct {
 	Method     string
 	Path       string
+	PathRegexp *regexp.Regexp
 	Status     int
 	AccessLogs []*AccessLog
 }
 
 func (seg *ReportSegment) match(l *AccessLog) bool {
-	return seg.Method == l.Method && seg.Path == l.Path && seg.Status == l.Status
+	if seg.Method != l.Method || seg.Status != l.Status {
+		return false
+	}
+	if seg.PathRegexp != nil {
+		return seg.PathRegexp.MatchString(l.Path)
+	}
+	return seg.Path == l.Path
 }
 
 func (seg *ReportSegment) add(l *AccessLog) {

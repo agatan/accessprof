@@ -2,6 +2,7 @@ package accessprof
 
 import (
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 )
@@ -16,8 +17,8 @@ func Count() int {
 	return defaultAccessProf.Count()
 }
 
-func MakeReport() *Report {
-	return defaultAccessProf.MakeReport()
+func MakeReport(aggregates []*regexp.Regexp) *Report {
+	return defaultAccessProf.MakeReport(aggregates)
 }
 
 func Reset() {
@@ -64,25 +65,35 @@ func (a *AccessProf) Count() int {
 	return n
 }
 
-func (a *AccessProf) MakeReport() *Report {
+func (a *AccessProf) MakeReport(aggregates []*regexp.Regexp) *Report {
 	var segs []*ReportSegment
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	for _, l := range a.accessLogs {
+		newsegment := true
 		for _, seg := range segs {
 			if seg.match(l) {
 				seg.add(l)
-				goto next
+				newsegment = false
+				break
 			}
 		}
-		segs = append(segs, &ReportSegment{
-			Method:     l.Method,
-			Path:       l.Path,
-			Status:     l.Status,
-			AccessLogs: []*AccessLog{l},
-		})
-	next:
+		if newsegment {
+			seg := &ReportSegment{
+				Method:     l.Method,
+				Path:       l.Path,
+				Status:     l.Status,
+				AccessLogs: []*AccessLog{l},
+			}
+			for _, agg := range aggregates {
+				if agg.MatchString(l.Path) {
+					seg.PathRegexp = agg
+					break
+				}
+			}
+			segs = append(segs, seg)
+		}
 	}
 
 	return &Report{Segments: segs}
