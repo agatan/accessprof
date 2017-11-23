@@ -20,9 +20,21 @@ type Handler struct {
 	mu         sync.Mutex
 	accessLogs []*AccessLog
 	Handler    http.Handler
+	ReportPath string
 }
 
 func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if a.ReportPath != "" && r.URL.Path == a.ReportPath {
+		if r.Method == http.MethodDelete {
+			a.Reset()
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method == http.MethodGet {
+			a.serveReportRequest(w, r)
+			return
+		}
+	}
 	l := &AccessLog{
 		Method:          r.Method,
 		Path:            r.URL.Path,
@@ -84,4 +96,7 @@ func (a *Handler) Reset() {
 	a.mu.Lock()
 	a.accessLogs = a.accessLogs[:0]
 	a.mu.Unlock()
+}
+
+func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
 }

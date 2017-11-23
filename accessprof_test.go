@@ -96,3 +96,41 @@ func TestAccessProf_Reset(t *testing.T) {
 		t.Fatalf("Reset does not work")
 	}
 }
+
+func TestAccessProf_ServeHTTP_withoutReportPath(t *testing.T) {
+	reached := false
+	a := &Handler{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reached = true
+	})}
+	server := httptest.NewServer(a)
+	defer server.Close()
+
+	http.Get(server.URL)
+
+	if !reached {
+		t.Fatal("All requests should be reached to the original handler if ReportPath is not specified")
+	}
+}
+
+func TestAccessProf_ServeHTTP_resetLogs(t *testing.T) {
+	a := &Handler{Handler: testHandler, ReportPath: "/accessprof"}
+	server := httptest.NewServer(a)
+	defer server.Close()
+
+	http.Get(server.URL)
+	http.Get(server.URL + "/test")
+
+	if a.Count() != 2 {
+		t.Fatal("non-report requests should be reached to the original handler")
+	}
+
+	req, _ := http.NewRequest(http.MethodDelete, server.URL+"/accessprof", nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		t.Errorf("Reset request is failed: error %v, status code %d", err, resp.StatusCode)
+	}
+
+	if a.Count() != 0 {
+		t.Fatalf("Reset request is failed")
+	}
+}
