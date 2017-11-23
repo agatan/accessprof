@@ -139,9 +139,11 @@ func (r *Report) String() string {
 
 func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 	data := struct {
-		Header []string
-		Rows   [][]string
+		Header     []string
+		Rows       [][]string
+		ReportPath string
 	}{}
+	data.ReportPath = reportPath
 	data.Header = []string{"STATUS", "METHOD", "PATH", "COUNT", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "SUM(BODY)", "AVG(BODY)"}
 	for _, seg := range r.Segments {
 		data.Rows = append(data.Rows, []string{
@@ -195,6 +197,10 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
         {{ end }}
       </tbody>
     </table>
+    <form action="{{ .ReportPath }}" method="get">
+	  <input type="text" name="agg" placeholder="/users/\d+,/.*\.png">
+	  <input type="submit" value="Go">
+    </form>
   </body>
 </html>
 `))

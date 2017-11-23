@@ -1,8 +1,11 @@
 package accessprof
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -99,7 +102,28 @@ func (a *Handler) Reset() {
 }
 
 func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
-	if err := a.MakeReport(nil).RenderHTML(w, a.ReportPath); err != nil {
+	if err := r.Body.Close(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	aggparam := r.URL.Query().Get("agg")
+	var aggs []*regexp.Regexp
+	if aggparam != "" {
+		for _, agg := range strings.Split(aggparam, ",") {
+			re, err := regexp.Compile(agg)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				body, _ := json.Marshal(map[string]string{
+					"error": fmt.Sprintf("failed to compile regexp %q: %v", re, err),
+				})
+				w.Write(body)
+				return
+			}
+			aggs = append(aggs, re)
+		}
+	}
+	if err := a.MakeReport(aggs).RenderHTML(w, a.ReportPath); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}
