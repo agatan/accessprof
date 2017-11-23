@@ -9,7 +9,14 @@ go get github.com/agatan/accessprof
 
 ## Example
 
-See `_example/example.go`.
+See `_example/`.
+
+### HTML view
+
+Wrap your handler with `ReportPrefix` (`accessprof.Handler{Handler: handler, ReportPrefix: "/accessprof"}`), and access `/accessprof`.
+Try `go run _example/ashtml.go`.
+
+### CLI view
 
 ```go
 package main
@@ -32,7 +39,8 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 })
 
 func main() {
-	server := httptest.NewServer(accessprof.Wrap(exampleHandler))
+	handler := &accessprof.Handler{Handler: exampleHandler}
+	server := httptest.NewServer(handler)
 	defer server.Close()
 
 	http.Get(server.URL)
@@ -41,7 +49,7 @@ func main() {
 	http.Post(server.URL+"/test/123", "application/json", strings.NewReader("{}"))
 	http.Post(server.URL+"/test/789", "application/json", strings.NewReader(`{"key": "value"}`))
 
-	report := accessprof.MakeReport([]*regexp.Regexp{
+	report := handler.Report([]*regexp.Regexp{
 		regexp.MustCompile(`/test/\d+`),
 	})
 	fmt.Print(report.String())
