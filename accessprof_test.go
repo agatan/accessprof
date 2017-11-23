@@ -9,7 +9,7 @@ import (
 )
 
 var testHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Path: %s", r.URL.Path)
+	w.Write([]byte(fmt.Sprintf("Path: %s", r.URL.Path)))
 })
 
 func TestAccessProf_Wrap_recordsRequests(t *testing.T) {
@@ -74,8 +74,8 @@ func ExampleAccessProf() {
 	// +--------+--------+-------+-------+
 	// | STATUS | METHOD | PATH  | COUNT |
 	// +--------+--------+-------+-------+
-	// |      0 | GET    | /     |     1 |
-	// |      0 | GET    | /test |     2 |
-	// |      0 | POST   | /     |     2 |
+	// |    200 | GET    | /     |     1 |
+	// |    200 | GET    | /test |     2 |
+	// |    200 | POST   | /     |     2 |
 	// +--------+--------+-------+-------+
 }

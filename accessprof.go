@@ -38,8 +38,10 @@ func (a *AccessProf) Wrap(h http.Handler) http.Handler {
 			RequestBodySize: r.ContentLength,
 		}
 		start := time.Now()
-		h.ServeHTTP(w, r)
+		wrapped := responseWriter{w: w}
+		h.ServeHTTP(&wrapped, r)
 		l.ResponseTime = time.Now().Sub(start)
+		l.Status = wrapped.status
 		a.mu.Lock()
 		a.accessLogs = append(a.accessLogs, l)
 		a.mu.Unlock()
