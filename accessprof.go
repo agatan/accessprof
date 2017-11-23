@@ -95,6 +95,10 @@ func (seg *ReportSegment) add(l *AccessLog) {
 	seg.AccessLogs = append(seg.AccessLogs, l)
 }
 
+func (seg *ReportSegment) Count() int {
+	return len(seg.AccessLog)
+}
+
 func (seg *ReportSegment) SumBody() int {
 	var n int
 	for _, l := range seg.AccessLogs {
@@ -116,7 +120,7 @@ func (r *Report) String() string {
 			strconv.Itoa(seg.Status),
 			seg.Method,
 			seg.Path,
-			strconv.Itoa(len(seg.AccessLogs)),
+			strconv.Itoa(seg.Count()),
 			strconv.Itoa(seg.SumBody()),
 		})
 	}
