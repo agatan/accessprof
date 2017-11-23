@@ -2,6 +2,7 @@ package accessprof
 
 import (
 	"bytes"
+	"html/template"
 	"io"
 	"math"
 	"regexp"
@@ -9,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alecthomas/template"
 	"github.com/olekukonko/tablewriter"
 )
 
