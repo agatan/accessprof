@@ -1,9 +1,13 @@
 package accessprof
 
 import (
+	"bytes"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 var defaultAccessProf AccessProf
@@ -90,4 +94,20 @@ func (seg *ReportSegment) add(l *AccessLog) {
 
 type Report struct {
 	Segments []*ReportSegment
+}
+
+func (r *Report) String() string {
+	var buf bytes.Buffer
+	w := tablewriter.NewWriter(&buf)
+	w.SetHeader([]string{"Status", "Method", "Path", "Count"})
+	for _, seg := range r.Segments {
+		w.Append([]string{
+			strconv.Itoa(seg.Status),
+			seg.Method,
+			seg.Path,
+			strconv.Itoa(len(seg.AccessLogs)),
+		})
+	}
+	w.Render()
+	return buf.String()
 }

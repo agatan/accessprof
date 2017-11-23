@@ -55,3 +55,27 @@ func TestAccessProf_Report_aggregatesByPath(t *testing.T) {
 		t.Fatalf("expected 2 report segments, GET / and GET /test; but got %d", len(report.Segments))
 	}
 }
+
+func ExampleAccessProf() {
+	var a AccessProf
+	server := httptest.NewServer(a.Wrap(testHandler))
+	defer server.Close()
+
+	http.Get(server.URL)
+	http.Get(server.URL + "/test")
+	http.Get(server.URL + "/test")
+	http.Post(server.URL, "application/json", strings.NewReader("{}"))
+	http.Post(server.URL, "application/json", strings.NewReader(`{"key": "value"}`))
+
+	report := a.Report()
+	fmt.Println(report.String())
+
+	// Output:
+	// +--------+--------+-------+-------+
+	// | STATUS | METHOD | PATH  | COUNT |
+	// +--------+--------+-------+-------+
+	// |      0 | GET    | /     |     1 |
+	// |      0 | GET    | /test |     2 |
+	// |      0 | POST   | /     |     2 |
+	// +--------+--------+-------+-------+
+}
