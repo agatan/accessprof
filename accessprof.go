@@ -61,7 +61,7 @@ func (a *Handler) Count() int {
 	return n
 }
 
-func (a *Handler) MakeReport(aggregates []*regexp.Regexp) *Report {
+func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
 	var segs []*ReportSegment
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -123,7 +123,7 @@ func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
 			aggs = append(aggs, re)
 		}
 	}
-	if err := a.MakeReport(aggs).RenderHTML(w, a.ReportPath); err != nil {
+	if err := a.Report(aggs).RenderHTML(w, a.ReportPath); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}

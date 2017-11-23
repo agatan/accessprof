@@ -28,7 +28,7 @@ func main() {
 	http.Post(server.URL+"/test/123", "application/json", strings.NewReader("{}"))
 	http.Post(server.URL+"/test/789", "application/json", strings.NewReader(`{"key": "value"}`))
 
-	report := handler.MakeReport([]*regexp.Regexp{
+	report := handler.Report([]*regexp.Regexp{
 		regexp.MustCompile(`/test/\d+`),
 	})
 	fmt.Print(report.String())
