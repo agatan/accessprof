@@ -2,6 +2,7 @@ package accessprof
 
 import (
 	"bytes"
+	"math"
 	"net/http"
 	"strconv"
 	"sync"
@@ -99,6 +100,26 @@ func (seg *ReportSegment) Count() int {
 	return len(seg.AccessLogs)
 }
 
+func (seg *ReportSegment) MinBody() int {
+	var n int = math.MaxInt32
+	for _, l := range seg.AccessLogs {
+		if n > l.ResponseBodySize {
+			n = l.ResponseBodySize
+		}
+	}
+	return n
+}
+
+func (seg *ReportSegment) MaxBody() int {
+	var n int
+	for _, l := range seg.AccessLogs {
+		if n < l.ResponseBodySize {
+			n = l.ResponseBodySize
+		}
+	}
+	return n
+}
+
 func (seg *ReportSegment) SumBody() int {
 	var n int
 	for _, l := range seg.AccessLogs {
@@ -118,13 +139,15 @@ type Report struct {
 func (r *Report) String() string {
 	var buf bytes.Buffer
 	w := tablewriter.NewWriter(&buf)
-	w.SetHeader([]string{"Status", "Method", "Path", "Count", "Sum(body)", "AVG(BODY)"})
+	w.SetHeader([]string{"Status", "Method", "Path", "Count", "MIN(BODY)", "MAX(BODY)", "Sum(body)", "AVG(BODY)"})
 	for _, seg := range r.Segments {
 		w.Append([]string{
 			strconv.Itoa(seg.Status),
 			seg.Method,
 			seg.Path,
 			strconv.Itoa(seg.Count()),
+			strconv.Itoa(seg.MinBody()),
+			strconv.Itoa(seg.MaxBody()),
 			strconv.Itoa(seg.SumBody()),
 			strconv.FormatFloat(seg.AvgBody(), 'f', 3, 64),
 		})
