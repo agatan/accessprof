@@ -107,6 +107,10 @@ func (seg *ReportSegment) SumBody() int {
 	return n
 }
 
+func (seg *ReportSegment) AvgBody() float64 {
+	return float64(seg.SumBody()) / float64(seg.Count())
+}
+
 type Report struct {
 	Segments []*ReportSegment
 }
@@ -114,7 +118,7 @@ type Report struct {
 func (r *Report) String() string {
 	var buf bytes.Buffer
 	w := tablewriter.NewWriter(&buf)
-	w.SetHeader([]string{"Status", "Method", "Path", "Count", "Sum(body)"})
+	w.SetHeader([]string{"Status", "Method", "Path", "Count", "Sum(body)", "AVG(BODY)"})
 	for _, seg := range r.Segments {
 		w.Append([]string{
 			strconv.Itoa(seg.Status),
@@ -122,6 +126,7 @@ func (r *Report) String() string {
 			seg.Path,
 			strconv.Itoa(seg.Count()),
 			strconv.Itoa(seg.SumBody()),
+			strconv.FormatFloat(seg.AvgBody(), 'f', 3, 64),
 		})
 	}
 	w.Render()
