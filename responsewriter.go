@@ -3,8 +3,9 @@ package accessprof
 import "net/http"
 
 type responseWriter struct {
-	w      http.ResponseWriter
-	status int
+	w           http.ResponseWriter
+	status      int
+	writtenSize int
 }
 
 func (r *responseWriter) WriteHeader(n int) {
@@ -20,5 +21,7 @@ func (r *responseWriter) Write(s []byte) (int, error) {
 	if r.status == 0 {
 		r.WriteHeader(http.StatusOK)
 	}
-	return r.w.Write(s)
+	n, err := r.w.Write(s)
+	r.writtenSize += n
+	return n, err
 }

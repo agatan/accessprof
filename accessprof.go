@@ -42,6 +42,7 @@ func (a *AccessProf) Wrap(h http.Handler) http.Handler {
 		h.ServeHTTP(&wrapped, r)
 		l.ResponseTime = time.Now().Sub(start)
 		l.Status = wrapped.status
+		l.ResponseBodySize = wrapped.writtenSize
 		a.mu.Lock()
 		a.accessLogs = append(a.accessLogs, l)
 		a.mu.Unlock()
@@ -94,6 +95,14 @@ func (seg *ReportSegment) add(l *AccessLog) {
 	seg.AccessLogs = append(seg.AccessLogs, l)
 }
 
+func (seg *ReportSegment) SumBody() int {
+	var n int
+	for _, l := range seg.AccessLogs {
+		n += l.ResponseBodySize
+	}
+	return n
+}
+
 type Report struct {
 	Segments []*ReportSegment
 }
@@ -101,13 +110,14 @@ type Report struct {
 func (r *Report) String() string {
 	var buf bytes.Buffer
 	w := tablewriter.NewWriter(&buf)
-	w.SetHeader([]string{"Status", "Method", "Path", "Count"})
+	w.SetHeader([]string{"Status", "Method", "Path", "Count", "Sum(body)"})
 	for _, seg := range r.Segments {
 		w.Append([]string{
 			strconv.Itoa(seg.Status),
 			seg.Method,
 			seg.Path,
 			strconv.Itoa(len(seg.AccessLogs)),
+			strconv.Itoa(seg.SumBody()),
 		})
 	}
 	w.Render()
