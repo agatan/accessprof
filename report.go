@@ -189,28 +189,30 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
     <title></title>
   </head>
   <body>
-    <table id="foo-table" class="table table-bordered">
-      <thead>
-        <tr>
-          {{ range .Header }}
-            <th>{{.}}</th>
-          {{ end }}
-        </tr>
-      </thead>
-      <tbody>
-        {{ range .Rows }}
+    <div>
+      <table id="foo-table" class="table table-bordered">
+        <thead>
           <tr>
-            {{ range . }}
-              <td>{{ . }}</td>
-            {{end}}
+            {{ range .Header }}
+              <th>{{.}}</th>
+            {{ end }}
           </tr>
-        {{ end }}
-      </tbody>
-    </table>
-    <form action="{{ .ReportPath }}" method="get">
-	  <input type="text" name="agg" placeholder="/users/\d+,/.*\.png" value="{{ .Aggregates }}">
-	  <input type="submit" value="Go">
-    </form>
+        </thead>
+        <tbody>
+          {{ range .Rows }}
+            <tr>
+              {{ range . }}
+                <td>{{ . }}</td>
+              {{end}}
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+      <form action="{{ .ReportPath }}" method="get">
+        <input type="text" name="agg" placeholder="/users/\d+,/.*\.png" value="{{ .Aggregates }}">
+        <input type="submit" value="Go">
+      </form>
+	</div>
   </body>
 </html>
 `))
