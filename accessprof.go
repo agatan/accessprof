@@ -75,3 +75,9 @@ func (a *AccessProf) Report() *Report {
 
 	return &Report{Segments: segs}
 }
+
+func (a *AccessProf) Reset() {
+	a.mu.Lock()
+	a.accessLogs = a.accessLogs[:0]
+	a.mu.Unlock()
+}
