@@ -32,6 +32,13 @@ func (seg *ReportSegment) add(l *AccessLog) {
 	seg.AccessLogs = append(seg.AccessLogs, l)
 }
 
+func (seg *ReportSegment) AggregationPath() string {
+	if seg.PathRegexp != nil {
+		return seg.PathRegexp.String()
+	}
+	return seg.Path
+}
+
 func (seg *ReportSegment) Count() int {
 	return len(seg.AccessLogs)
 }
@@ -112,7 +119,7 @@ func (r *Report) String() string {
 		w.Append([]string{
 			strconv.Itoa(seg.Status),
 			seg.Method,
-			seg.Path,
+			seg.AggregationPath(),
 			strconv.Itoa(seg.Count()),
 			seg.MinResponseTime().String(),
 			seg.MaxResponseTime().String(),
