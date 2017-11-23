@@ -96,7 +96,7 @@ func (seg *ReportSegment) add(l *AccessLog) {
 }
 
 func (seg *ReportSegment) Count() int {
-	return len(seg.AccessLog)
+	return len(seg.AccessLogs)
 }
 
 func (seg *ReportSegment) SumBody() int {
