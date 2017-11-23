@@ -17,8 +17,7 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 })
 
 func main() {
-	var a accessprof.AccessProf
-	server := httptest.NewServer(a.Wrap(exampleHandler))
+	server := httptest.NewServer(accessprof.Wrap(exampleHandler))
 	defer server.Close()
 
 	http.Get(server.URL)
@@ -27,7 +26,7 @@ func main() {
 	http.Post(server.URL, "application/json", strings.NewReader("{}"))
 	http.Post(server.URL, "application/json", strings.NewReader(`{"key": "value"}`))
 
-	report := a.Report()
+	report := accessprof.MakeReport()
 	fmt.Print(report.String())
 
 	// Output:

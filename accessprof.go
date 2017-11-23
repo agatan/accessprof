@@ -12,6 +12,18 @@ func Wrap(h http.Handler) http.Handler {
 	return defaultAccessProf.Wrap(h)
 }
 
+func Count() int {
+	return defaultAccessProf.Count()
+}
+
+func MakeReport() *Report {
+	return defaultAccessProf.MakeReport()
+}
+
+func Reset() {
+	defaultAccessProf.Reset()
+}
+
 type AccessLog struct {
 	Method           string
 	Path             string
@@ -52,7 +64,7 @@ func (a *AccessProf) Count() int {
 	return n
 }
 
-func (a *AccessProf) Report() *Report {
+func (a *AccessProf) MakeReport() *Report {
 	var segs []*ReportSegment
 	a.mu.Lock()
 	defer a.mu.Unlock()

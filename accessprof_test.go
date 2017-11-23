@@ -29,7 +29,7 @@ func TestAccessProf_Wrap_recordsRequests(t *testing.T) {
 	}
 }
 
-func TestAccessProf_Report_aggregatesByMethod(t *testing.T) {
+func TestAccessProf_MakeReport_aggregatesByMethod(t *testing.T) {
 	var a AccessProf
 	server := httptest.NewServer(a.Wrap(testHandler))
 	defer server.Close()
@@ -38,13 +38,13 @@ func TestAccessProf_Report_aggregatesByMethod(t *testing.T) {
 	http.Post(server.URL, "application/json", strings.NewReader("{}"))
 	http.Post(server.URL, "application/json", strings.NewReader(`{"key": "value"}`))
 
-	report := a.Report()
+	report := a.MakeReport()
 	if len(report.Segments) != 2 {
 		t.Fatalf("expected 2 report segments, GET / and POST /; but got %d", len(report.Segments))
 	}
 }
 
-func TestAccessProf_Report_aggregatesByPath(t *testing.T) {
+func TestAccessProf_MakeReport_aggregatesByPath(t *testing.T) {
 	var a AccessProf
 	server := httptest.NewServer(a.Wrap(testHandler))
 	defer server.Close()
@@ -53,7 +53,7 @@ func TestAccessProf_Report_aggregatesByPath(t *testing.T) {
 	http.Get(server.URL + "/test")
 	http.Get(server.URL + "/test")
 
-	report := a.Report()
+	report := a.MakeReport()
 	if len(report.Segments) != 2 {
 		t.Fatalf("expected 2 report segments, GET / and GET /test; but got %d", len(report.Segments))
 	}
@@ -68,13 +68,13 @@ func TestAccessProf_Reset(t *testing.T) {
 	http.Get(server.URL + "/test")
 	http.Get(server.URL + "/test")
 
-	report := a.Report()
+	report := a.MakeReport()
 	if len(report.Segments) != 2 {
 		t.Fatalf("expected 2 report segments, GET / and GET /test; but got %d", len(report.Segments))
 	}
 
 	a.Reset()
-	report = a.Report()
+	report = a.MakeReport()
 	if len(report.Segments) != 0 {
 		t.Fatalf("Reset does not work")
 	}
