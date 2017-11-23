@@ -6,6 +6,7 @@ import (
 	"math"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/template"
@@ -110,7 +111,8 @@ func (seg *ReportSegment) AvgBody() float64 {
 }
 
 type Report struct {
-	Segments []*ReportSegment
+	Segments   []*ReportSegment
+	Aggregates []*regexp.Regexp
 }
 
 func (r *Report) String() string {
@@ -142,6 +144,7 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 		Header     []string
 		Rows       [][]string
 		ReportPath string
+		Aggregates string
 	}{}
 	data.ReportPath = reportPath
 	data.Header = []string{"STATUS", "METHOD", "PATH", "COUNT", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "SUM(BODY)", "AVG(BODY)"}
@@ -160,6 +163,13 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 			strconv.Itoa(seg.SumBody()),
 			strconv.FormatFloat(seg.AvgBody(), 'f', 3, 64),
 		})
+	}
+	if len(r.Aggregates) != 0 {
+		aggs := make([]string, len(r.Aggregates))
+		for i, agg := range r.Aggregates {
+			aggs[i] = agg.String()
+		}
+		data.Aggregates = strings.Join(aggs, ",")
 	}
 
 	return htmlTemplate.Execute(w, data)
@@ -198,7 +208,7 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
       </tbody>
     </table>
     <form action="{{ .ReportPath }}" method="get">
-	  <input type="text" name="agg" placeholder="/users/\d+,/.*\.png">
+	  <input type="text" name="agg" placeholder="/users/\d+,/.*\.png" value="{{ .Aggregates }}">
 	  <input type="submit" value="Go">
     </form>
   </body>

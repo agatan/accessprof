@@ -92,7 +92,7 @@ func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
 		}
 	}
 
-	return &Report{Segments: segs}
+	return &Report{Segments: segs, Aggregates: aggregates}
 }
 
 func (a *Handler) Reset() {
