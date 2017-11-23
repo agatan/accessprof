@@ -18,7 +18,8 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 })
 
 func main() {
-	server := httptest.NewServer(accessprof.Wrap(exampleHandler))
+	handler := &accessprof.AccessProf{Handler: exampleHandler}
+	server := httptest.NewServer(handler)
 	defer server.Close()
 
 	http.Get(server.URL)
@@ -27,7 +28,7 @@ func main() {
 	http.Post(server.URL+"/test/123", "application/json", strings.NewReader("{}"))
 	http.Post(server.URL+"/test/789", "application/json", strings.NewReader(`{"key": "value"}`))
 
-	report := accessprof.MakeReport([]*regexp.Regexp{
+	report := handler.MakeReport([]*regexp.Regexp{
 		regexp.MustCompile(`/test/\d+`),
 	})
 	fmt.Print(report.String())

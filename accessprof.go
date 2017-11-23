@@ -7,24 +7,6 @@ import (
 	"time"
 )
 
-var defaultAccessProf AccessProf
-
-func Wrap(h http.Handler) http.Handler {
-	return defaultAccessProf.Wrap(h)
-}
-
-func Count() int {
-	return defaultAccessProf.Count()
-}
-
-func MakeReport(aggregates []*regexp.Regexp) *Report {
-	return defaultAccessProf.MakeReport(aggregates)
-}
-
-func Reset() {
-	defaultAccessProf.Reset()
-}
-
 type AccessLog struct {
 	Method           string
 	Path             string
@@ -37,25 +19,24 @@ type AccessLog struct {
 type AccessProf struct {
 	mu         sync.Mutex
 	accessLogs []*AccessLog
+	Handler    http.Handler
 }
 
-func (a *AccessProf) Wrap(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := &AccessLog{
-			Method:          r.Method,
-			Path:            r.URL.Path,
-			RequestBodySize: r.ContentLength,
-		}
-		start := time.Now()
-		wrapped := responseWriter{w: w}
-		h.ServeHTTP(&wrapped, r)
-		l.ResponseTime = time.Now().Sub(start)
-		l.Status = wrapped.status
-		l.ResponseBodySize = wrapped.writtenSize
-		a.mu.Lock()
-		a.accessLogs = append(a.accessLogs, l)
-		a.mu.Unlock()
-	})
+func (a *AccessProf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	l := &AccessLog{
+		Method:          r.Method,
+		Path:            r.URL.Path,
+		RequestBodySize: r.ContentLength,
+	}
+	start := time.Now()
+	wrapped := responseWriter{w: w}
+	a.Handler.ServeHTTP(&wrapped, r)
+	l.ResponseTime = time.Now().Sub(start)
+	l.Status = wrapped.status
+	l.ResponseBodySize = wrapped.writtenSize
+	a.mu.Lock()
+	a.accessLogs = append(a.accessLogs, l)
+	a.mu.Unlock()
 }
 
 func (a *AccessProf) Count() int {

@@ -17,8 +17,8 @@ var testHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) 
 })
 
 func TestAccessProf_Wrap_recordsRequests(t *testing.T) {
-	var accessProf AccessProf
-	server := httptest.NewServer(accessProf.Wrap(testHandler))
+	accessProf := &AccessProf{Handler: testHandler}
+	server := httptest.NewServer(accessProf)
 	defer server.Close()
 
 	http.Get(server.URL + "/get/1")
@@ -31,8 +31,8 @@ func TestAccessProf_Wrap_recordsRequests(t *testing.T) {
 }
 
 func TestAccessProf_MakeReport_aggregatesByMethod(t *testing.T) {
-	var a AccessProf
-	server := httptest.NewServer(a.Wrap(testHandler))
+	a := &AccessProf{Handler: testHandler}
+	server := httptest.NewServer(a)
 	defer server.Close()
 
 	http.Get(server.URL)
@@ -46,8 +46,8 @@ func TestAccessProf_MakeReport_aggregatesByMethod(t *testing.T) {
 }
 
 func TestAccessProf_MakeReport_aggregatesByPath(t *testing.T) {
-	var a AccessProf
-	server := httptest.NewServer(a.Wrap(testHandler))
+	a := &AccessProf{Handler: testHandler}
+	server := httptest.NewServer(a)
 	defer server.Close()
 
 	http.Get(server.URL)
@@ -61,8 +61,8 @@ func TestAccessProf_MakeReport_aggregatesByPath(t *testing.T) {
 }
 
 func TestAccessProf_MakeReport_aggregatesByPathRegexp(t *testing.T) {
-	var a AccessProf
-	server := httptest.NewServer(a.Wrap(testHandler))
+	a := &AccessProf{Handler: testHandler}
+	server := httptest.NewServer(a)
 	defer server.Close()
 
 	http.Get(server.URL)
@@ -77,8 +77,8 @@ func TestAccessProf_MakeReport_aggregatesByPathRegexp(t *testing.T) {
 }
 
 func TestAccessProf_Reset(t *testing.T) {
-	var a AccessProf
-	server := httptest.NewServer(a.Wrap(testHandler))
+	a := &AccessProf{Handler: testHandler}
+	server := httptest.NewServer(a)
 	defer server.Close()
 
 	http.Get(server.URL)
