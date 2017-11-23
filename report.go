@@ -116,7 +116,7 @@ type Report struct {
 func (r *Report) String() string {
 	var buf bytes.Buffer
 	w := tablewriter.NewWriter(&buf)
-	w.SetHeader([]string{"Status", "Method", "Path", "Count", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "Sum(body)", "AVG(BODY)"})
+	w.SetHeader([]string{"STATUS", "METHOD", "PATH", "COUNT", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "SUM(BODY)", "AVG(BODY)"})
 	for _, seg := range r.Segments {
 		w.Append([]string{
 			strconv.Itoa(seg.Status),
@@ -142,7 +142,7 @@ func (r *Report) RenderHTML(w io.Writer) error {
 		Header []string
 		Rows   [][]string
 	}{}
-	data.Header = []string{"STATUS", "METHOD", "PATH", "COUNT", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "Sum(body)", "AVG(BODY)"}
+	data.Header = []string{"STATUS", "METHOD", "PATH", "COUNT", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "SUM(BODY)", "AVG(BODY)"}
 	for _, seg := range r.Segments {
 		data.Rows = append(data.Rows, []string{
 			strconv.Itoa(seg.Status),
