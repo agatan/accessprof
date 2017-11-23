@@ -15,16 +15,9 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 })
 
 func main() {
-	handler := &accessprof.Handler{Handler: exampleHandler}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/accessprof/", func(w http.ResponseWriter, _ *http.Request) {
-		if err := handler.MakeReport(nil).RenderHTML(w); err != nil {
-			panic(err)
-		}
-	})
-	mux.Handle("/", handler)
+	handler := &accessprof.Handler{Handler: exampleHandler, ReportPath: "/accessprof"}
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		panic(err)
 	}
 }

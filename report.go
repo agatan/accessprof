@@ -137,7 +137,7 @@ func (r *Report) String() string {
 	return buf.String()
 }
 
-func (r *Report) RenderHTML(w io.Writer) error {
+func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 	data := struct {
 		Header []string
 		Rows   [][]string

@@ -99,4 +99,8 @@ func (a *Handler) Reset() {
 }
 
 func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
+	if err := a.MakeReport(nil).RenderHTML(w, a.ReportPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
 }
