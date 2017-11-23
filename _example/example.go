@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 
 	"github.com/agatan/accessprof"
@@ -21,12 +22,14 @@ func main() {
 	defer server.Close()
 
 	http.Get(server.URL)
-	http.Get(server.URL + "/test")
-	http.Get(server.URL + "/test")
-	http.Post(server.URL, "application/json", strings.NewReader("{}"))
-	http.Post(server.URL, "application/json", strings.NewReader(`{"key": "value"}`))
+	http.Get(server.URL + "/test/123")
+	http.Get(server.URL + "/test/456")
+	http.Post(server.URL+"/test/123", "application/json", strings.NewReader("{}"))
+	http.Post(server.URL+"/test/789", "application/json", strings.NewReader(`{"key": "value"}`))
 
-	report := accessprof.MakeReport()
+	report := accessprof.MakeReport([]*regexp.Regexp{
+		regexp.MustCompile(`/test/\d+`),
+	})
 	fmt.Print(report.String())
 
 	// Output:
