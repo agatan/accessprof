@@ -32,10 +32,26 @@ func TestAccessProf_Report_aggregatesByMethod(t *testing.T) {
 	defer server.Close()
 
 	http.Get(server.URL)
-	http.Post(server.URL, "", nil)
+	http.Post(server.URL, "application/json", strings.NewReader("{}"))
+	http.Post(server.URL, "application/json", strings.NewReader(`{"key": "value"}`))
 
 	report := a.Report()
 	if len(report.Segments) != 2 {
 		t.Fatalf("expected 2 report segments, GET / and POST /; but got %d", len(report.Segments))
+	}
+}
+
+func TestAccessProf_Report_aggregatesByPath(t *testing.T) {
+	var a AccessProf
+	server := httptest.NewServer(a.Wrap(testHandler))
+	defer server.Close()
+
+	http.Get(server.URL)
+	http.Get(server.URL + "/test")
+	http.Get(server.URL + "/test")
+
+	report := a.Report()
+	if len(report.Segments) != 2 {
+		t.Fatalf("expected 2 report segments, GET / and GET /test; but got %d", len(report.Segments))
 	}
 }
