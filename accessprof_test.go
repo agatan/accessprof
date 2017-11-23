@@ -2,6 +2,7 @@ package accessprof
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,7 +10,9 @@ import (
 )
 
 var testHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(fmt.Sprintf("Path: %s", r.URL.Path)))
+	w.Write([]byte(fmt.Sprintf("Path: %s\n", r.URL.Path)))
+	io.Copy(w, r.Body)
+	r.Body.Close()
 })
 
 func TestAccessProf_Wrap_recordsRequests(t *testing.T) {
@@ -71,12 +74,12 @@ func ExampleAccessProf() {
 	fmt.Println(report.String())
 
 	// Output:
-	// +--------+--------+-------+-------+-----------+-----------+-----------+-----------+
-	// | STATUS | METHOD | PATH  | COUNT | MIN(BODY) | MAX(BODY) | SUM(BODY) | AVG(BODY) |
-	// +--------+--------+-------+-------+-----------+-----------+-----------+-----------+
-	// |    200 | GET    | /     |     1 |         7 |         7 |         7 |     7.000 |
-	// |    200 | GET    | /test |     2 |        11 |        11 |        22 |    11.000 |
-	// |    200 | POST   | /     |     2 |         7 |         7 |        14 |     7.000 |
-	// +--------+--------+-------+-------+-----------+-----------+-----------+-----------+
+	// +--------+--------+-------+----------+----------+---------+----------+-----+-----------+-----------+-----------+-----------+
+	// | STATUS | METHOD | PATH  |  COUNT   |   MIN    |   MAX   |   SUM    | AVG | MIN(BODY) | MAX(BODY) | SUM(BODY) | AVG(BODY) |
+	// +--------+--------+-------+----------+----------+---------+----------+-----+-----------+-----------+-----------+-----------+
+	// |    200 | GET    | /     | 2.555µs  | 2.555µs  | 2.555µs | 2.555µs  |   1 |         8 |         8 |         8 |     8.000 |
+	// |    200 | GET    | /test | 2.335µs  | 2.767µs  | 5.102µs | 2.551µs  |   2 |        12 |        12 |        24 |    12.000 |
+	// |    200 | POST   | /     | 11.165µs | 12.885µs | 24.05µs | 12.025µs |   2 |        10 |        24 |        34 |    17.000 |
+	// +--------+--------+-------+----------+----------+---------+----------+-----+-----------+-----------+-----------+-----------+
 
 }

@@ -100,6 +100,38 @@ func (seg *ReportSegment) Count() int {
 	return len(seg.AccessLogs)
 }
 
+func (seg *ReportSegment) MinResponseTime() time.Duration {
+	var n time.Duration = math.MaxInt32
+	for _, l := range seg.AccessLogs {
+		if n > l.ResponseTime {
+			n = l.ResponseTime
+		}
+	}
+	return n
+}
+
+func (seg *ReportSegment) MaxResponseTime() time.Duration {
+	var n time.Duration
+	for _, l := range seg.AccessLogs {
+		if n < l.ResponseTime {
+			n = l.ResponseTime
+		}
+	}
+	return n
+}
+
+func (seg *ReportSegment) SumResponseTime() time.Duration {
+	var n time.Duration
+	for _, l := range seg.AccessLogs {
+		n += l.ResponseTime
+	}
+	return n
+}
+
+func (seg *ReportSegment) AvgResponseTime() time.Duration {
+	return seg.SumResponseTime() / time.Duration(seg.Count())
+}
+
 func (seg *ReportSegment) MinBody() int {
 	var n int = math.MaxInt32
 	for _, l := range seg.AccessLogs {
@@ -139,12 +171,16 @@ type Report struct {
 func (r *Report) String() string {
 	var buf bytes.Buffer
 	w := tablewriter.NewWriter(&buf)
-	w.SetHeader([]string{"Status", "Method", "Path", "Count", "MIN(BODY)", "MAX(BODY)", "Sum(body)", "AVG(BODY)"})
+	w.SetHeader([]string{"Status", "Method", "Path", "Count", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "Sum(body)", "AVG(BODY)"})
 	for _, seg := range r.Segments {
 		w.Append([]string{
 			strconv.Itoa(seg.Status),
 			seg.Method,
 			seg.Path,
+			seg.MinResponseTime().String(),
+			seg.MaxResponseTime().String(),
+			seg.SumResponseTime().String(),
+			seg.AvgResponseTime().String(),
 			strconv.Itoa(seg.Count()),
 			strconv.Itoa(seg.MinBody()),
 			strconv.Itoa(seg.MaxBody()),
