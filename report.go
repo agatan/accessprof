@@ -2,12 +2,12 @@ package accessprof
 
 import (
 	"bytes"
-	"html/template"
 	"io"
 	"math"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
@@ -175,10 +175,10 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 	}
 	data.Since = r.Since.String()
 
-	return htmlTemplate.Execute(w, data)
+	return tmpl.Execute(w, data)
 }
 
-var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
+var tmpl = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8">
