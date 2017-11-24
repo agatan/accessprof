@@ -54,6 +54,7 @@ type Handler struct {
 	ReportPath     string
 	LogFile        string
 	FlushThreshold int
+	flushMu        sync.Mutex
 }
 
 const (
@@ -185,6 +186,8 @@ func (a *Handler) flushLogs() (err error) {
 	if a.LogFile == "" {
 		return nil
 	}
+	a.flushMu.Lock()
+	defer a.flushMu.Unlock()
 
 	a.mu.Lock()
 	logs := a.accessLogs
@@ -214,6 +217,8 @@ func (a *Handler) loadAccessLogs() ([]*AccessLog, error) {
 	if a.LogFile == "" {
 		return nil, nil
 	}
+	a.flushMu.Lock()
+	defer a.flushMu.Unlock()
 	var logs []*AccessLog
 	f, err := os.Open(a.LogFile)
 	if err != nil {
