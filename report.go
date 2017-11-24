@@ -184,9 +184,15 @@ var tmpl = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs-3.3.7/jq-3.2.1/dt-1.10.16/datatables.min.css"/>
     <script type="text/javascript" src="https://cdn.datatables.net/v/bs-3.3.7/jq-3.2.1/dt-1.10.16/datatables.min.js"></script>
+    <script type="text/javascript" src="//cdn.datatables.net/plug-ins/1.10.16/sorting/numeric-comma.js"></script>
     <script>
       $(document).ready(function() {
-        $("#profile-table").DataTable();
+        $("#profile-table").DataTable({
+          columnDefs: [
+            { type: 'numeric-comma', targets: [3, 4, 5 ,6, 7, 8, 9, 10, 11] }
+          ]
+        });
+
         $("#reset-button").on("click", function() {
           $.ajax({
               url: "{{ .ReportPath }}",
