@@ -119,6 +119,11 @@ func (a *AccessProf) Reset() {
 	a.mu.Lock()
 	a.accessLogs = a.accessLogs[:0]
 	a.mu.Unlock()
+	if a.LogFile != "" {
+		a.flushMu.Lock()
+		os.Remove(a.LogFile)
+		a.flushMu.Unlock()
+	}
 }
 
 func (a *AccessProf) flushLogs() (err error) {
