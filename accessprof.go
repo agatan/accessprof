@@ -102,7 +102,7 @@ func (a *Handler) Count() int {
 
 func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
 	a.flushLogs()
-	logs, err := a.loadAccessLogs()
+	logs, err := a.LoadAccessLogs()
 	if err != nil {
 		panic(err)
 	}
@@ -213,7 +213,7 @@ func (a *Handler) flushLogs() (err error) {
 	return err
 }
 
-func (a *Handler) loadAccessLogs() ([]*AccessLog, error) {
+func (a *Handler) LoadAccessLogs() ([]*AccessLog, error) {
 	if a.LogFile == "" {
 		return nil, nil
 	}
