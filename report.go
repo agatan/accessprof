@@ -116,6 +116,14 @@ type Report struct {
 	Since      time.Time
 }
 
+func (r *Report) RequestCount() int {
+	var n int
+	for _, seg := range r.Segments {
+		n += seg.Count()
+	}
+	return n
+}
+
 func (r *Report) String() string {
 	var buf bytes.Buffer
 	w := tablewriter.NewWriter(&buf)
@@ -142,14 +150,16 @@ func (r *Report) String() string {
 
 func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 	data := struct {
-		Header     []string
-		Rows       [][]string
-		ReportPath string
-		Aggregates string
-		Since      string
+		Header       []string
+		RequestCount int
+		Rows         [][]string
+		ReportPath   string
+		Aggregates   string
+		Since        string
 	}{}
-	data.ReportPath = reportPath
 	data.Header = []string{"STATUS", "METHOD", "PATH", "COUNT", "MIN", "MAX", "SUM", "AVG", "MIN(BODY)", "MAX(BODY)", "SUM(BODY)", "AVG(BODY)"}
+	data.RequestCount = r.RequestCount()
+	data.ReportPath = reportPath
 	for _, seg := range r.Segments {
 		data.Rows = append(data.Rows, []string{
 			strconv.Itoa(seg.Status),
@@ -173,7 +183,7 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 		}
 		data.Aggregates = strings.Join(aggs, ",")
 	}
-	data.Since = r.Since.String()
+	data.Since = r.Since.Format(time.RFC3339Nano)
 
 	return tmpl.Execute(w, data)
 }
@@ -212,7 +222,7 @@ var tmpl = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
   </head>
   <body>
     <div>
-      <p>Get {{ len .Rows }} requests (Since {{ .Since }})</p>
+      <p>Get {{ .RequestCount }} requests (Since {{ .Since }})</p>
       <table id="profile-table" class="table table-bordered">
         <thead>
           <tr>
