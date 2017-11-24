@@ -15,7 +15,8 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 })
 
 func main() {
-	handler := &accessprof.Handler{Handler: exampleHandler, ReportPath: "/accessprof"}
+	var a accessprof.AccessProf
+	handler := a.Wrap(exampleHandler, "/accessprof")
 	// If you want to save memory, use LogFile to dump logs to the file.
 	// handler := &accessprof.Handler{Handler: exampleHandler, ReportPath: "/accessprof", LogFile: "accessprof.ltsv"}
 
