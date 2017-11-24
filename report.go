@@ -186,7 +186,20 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
     <script src="https://cdn.datatables.net/t/bs-3.3.6/jqc-1.12.0,dt-1.10.11/datatables.min.js"></script>
     <script>
       jQuery(function($){
-        $("#foo-table").DataTable();
+        $("#profile-table").DataTable();
+        $("#reset-button").on("click", function() {
+          $.ajax({
+			  url: "{{ .ReportPath }}",
+			  type: "DELETE",
+		  })
+		  .done(function(data) {
+			  alert('OK');
+			  location.reload();
+		  })
+		  .fail(function() {
+			  alert('Failed to reset logs');
+		  });
+        });
       });
     </script>
     <title></title>
@@ -194,7 +207,7 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
   <body>
     <div>
       <p>Get {{ len .Rows }} requests (Since {{ .Since }})</p>
-      <table id="foo-table" class="table table-bordered">
+      <table id="profile-table" class="table table-bordered">
         <thead>
           <tr>
             {{ range .Header }}
@@ -212,11 +225,17 @@ var htmlTemplate = template.Must(template.New("accessprof").Parse(`<!DOCTYPE htm
           {{ end }}
         </tbody>
       </table>
-      <form action="{{ .ReportPath }}" method="get">
-        <input type="text" name="agg" placeholder="/users/\d+,/.*\.png" value="{{ .Aggregates }}">
-        <input type="submit" value="Go">
-      </form>
-	</div>
+      <div class="row">
+        <div class="col-sm-5">
+          <form action="{{ .ReportPath }}" method="get">
+            <input type="text" name="agg" placeholder="/users/\d+,/.*\.png" value="{{ .Aggregates }}">
+            <input type="submit" value="Go">
+          </form>
+        </div>
+        <div class="col=sm-7">
+          <a href="#" id="reset-button" class="btn btn-danger">Reset</a>
+        </div>
+      </div>
   </body>
 </html>
 `))
