@@ -156,10 +156,10 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 			seg.Method,
 			seg.AggregationPath(),
 			strconv.Itoa(seg.Count()),
-			seg.MinResponseTime().String(),
-			seg.MaxResponseTime().String(),
-			seg.SumResponseTime().String(),
-			seg.AvgResponseTime().String(),
+			stringifyDuration(seg.MinResponseTime()),
+			stringifyDuration(seg.MaxResponseTime()),
+			stringifyDuration(seg.SumResponseTime()),
+			stringifyDuration(seg.AvgResponseTime()),
 			strconv.Itoa(seg.MinBody()),
 			strconv.Itoa(seg.MaxBody()),
 			strconv.Itoa(seg.SumBody()),
@@ -245,3 +245,8 @@ var tmpl = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
   </body>
 </html>
 `))
+
+func stringifyDuration(d time.Duration) string {
+	nanos := d.Nanoseconds()
+	return strconv.FormatFloat(float64(nanos)/1000000, 'f', 3, 64) + "ms"
+}
