@@ -37,7 +37,14 @@ func (seg *ReportSegment) add(l *AccessLog) {
 
 func (seg *ReportSegment) AggregationPath() string {
 	if seg.PathRegexp != nil {
-		return seg.PathRegexp.String()
+		s := seg.PathRegexp.String()
+		if s[0] == '^' {
+			s = s[1:]
+		}
+		if s[len(s)-1] == '$' {
+			s = s[:len(s)-1]
+		}
+		return s
 	}
 	return seg.Path
 }

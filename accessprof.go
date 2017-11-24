@@ -291,7 +291,7 @@ func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
 	var aggs []*regexp.Regexp
 	if aggparam != "" {
 		for _, agg := range strings.Split(aggparam, ",") {
-			re, err := regexp.Compile(agg)
+			re, err := regexp.Compile("^" + agg + "$")
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				body, _ := json.Marshal(map[string]string{
