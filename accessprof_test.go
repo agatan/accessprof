@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -132,5 +133,24 @@ func TestAccessProf_ServeHTTP_resetLogs(t *testing.T) {
 
 	if a.Count() != 0 {
 		t.Fatalf("Reset request is failed")
+	}
+}
+
+func TestAccessProf_Report_DumpToFile(t *testing.T) {
+	a := &Handler{Handler: testHandler, LogFile: "accessprof.ltsv"}
+	defer os.Remove("accessprof.ltsv")
+	server := httptest.NewServer(a)
+	defer server.Close()
+
+	for i := 0; i < 200; i++ {
+		http.Get(server.URL)
+	}
+	for i := 0; i < 100; i++ {
+		http.Get(server.URL + "/test")
+	}
+
+	report := a.Report(nil)
+	if len(report.Segments) != 2 {
+		t.Fatalf("Report should read from dump file, but it doesn't work: got %d segments", len(report.Segments))
 	}
 }

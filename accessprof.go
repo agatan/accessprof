@@ -1,12 +1,14 @@
 package accessprof
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -40,7 +42,7 @@ func (l *AccessLog) writeLTSV(w io.Writer) error {
 		statusLabel, l.Status,
 		responseBodySizeLabel, l.ResponseBodySize,
 		responseTimeLabel, l.ResponseTime.Nanoseconds(),
-		accessedAtLabel, l.AccessedAt.String(),
+		accessedAtLabel, l.AccessedAt.Format(time.RFC3339Nano),
 	)
 	return errors.Wrap(err, "failed to write accesslog as ltsv")
 }
@@ -99,15 +101,21 @@ func (a *Handler) Count() int {
 
 func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
 	a.flushLogs()
+	logs, err := a.loadAccessLogs()
+	if err != nil {
+		panic(err)
+	}
+
 	a.mu.Lock()
-	defer a.mu.Unlock()
+	logs = append(logs, a.accessLogs...)
+	a.mu.Unlock()
 
 	var (
 		segs  []*ReportSegment
 		since time.Time
 	)
 
-	for _, l := range a.accessLogs {
+	for _, l := range logs {
 		if since.IsZero() || since.After(l.AccessedAt) {
 			since = l.AccessedAt
 		}
@@ -200,4 +208,87 @@ func (a *Handler) flushLogs() (err error) {
 	}
 
 	return err
+}
+
+func (a *Handler) loadAccessLogs() ([]*AccessLog, error) {
+	if a.LogFile == "" {
+		return nil, nil
+	}
+	var logs []*AccessLog
+	f, err := os.Open(a.LogFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open access logs")
+	}
+	defer f.Close()
+	r := bufio.NewScanner(f)
+	line := 0
+	for r.Scan() {
+		line++
+		log, err := parseLTSV(r.Text())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse log at line %d", line)
+		}
+		logs = append(logs, log)
+	}
+	if err := r.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read access logs")
+	}
+	return logs, nil
+}
+
+func parseLTSV(s string) (*AccessLog, error) {
+	columns := strings.Split(s, "\t")
+	table := map[string]string{}
+	for _, column := range columns {
+		ss := strings.SplitN(column, ":", 2)
+		table[ss[0]] = ss[1]
+	}
+	l := new(AccessLog)
+	if s, ok := table[methodLabel]; ok {
+		l.Method = s
+	} else {
+		return nil, errors.New("missing method label")
+	}
+	if s, ok := table[pathLabel]; ok {
+		l.Path = s
+	} else {
+		return nil, errors.New("missing path label")
+	}
+	if s, ok := table[statusLabel]; ok {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse status code")
+		}
+		l.Status = n
+	} else {
+		return nil, errors.New("missing status label")
+	}
+	if s, ok := table[responseBodySizeLabel]; ok {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse response body size")
+		}
+		l.ResponseBodySize = n
+	} else {
+		return nil, errors.New("missing response body size label")
+	}
+	if s, ok := table[responseTimeLabel]; ok {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse response time")
+		}
+		l.ResponseTime = time.Nanosecond * time.Duration(n)
+	} else {
+		return nil, errors.New("missing response time label")
+	}
+	if s, ok := table[accessedAtLabel]; ok {
+		t, err := time.Parse(time.RFC3339Nano, s)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse accessed_at")
+		}
+		l.AccessedAt = t
+	} else {
+		return nil, errors.New("missing accessed_at label")
+	}
+	return l, nil
 }
