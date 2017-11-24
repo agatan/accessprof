@@ -48,10 +48,13 @@ func (l *AccessLog) writeLTSV(w io.Writer) error {
 }
 
 type Handler struct {
-	mu             sync.Mutex
-	accessLogs     []*AccessLog
-	Handler        http.Handler
-	ReportPath     string
+	mu         sync.Mutex
+	accessLogs []*AccessLog
+	// Handler is the base handler to wrap
+	Handler http.Handler
+	// ReportPath is a path of HTML reporting endpoint (ignored if empty)
+	ReportPath string
+	// LogFile is a filepath of the log file. (if empty, accessprof holds all logs on memory)
 	LogFile        string
 	FlushThreshold int
 	flushMu        sync.Mutex
