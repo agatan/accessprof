@@ -3,11 +3,15 @@ package accessprof
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type AccessLog struct {
@@ -20,12 +24,39 @@ type AccessLog struct {
 	AccessedAt       time.Time
 }
 
-type Handler struct {
-	mu         sync.Mutex
-	accessLogs []*AccessLog
-	Handler    http.Handler
-	ReportPath string
+const (
+	methodLabel           = "method"
+	pathLabel             = "path"
+	statusLabel           = "status"
+	responseBodySizeLabel = "response_body_size"
+	responseTimeLabel     = "response_time_nano"
+	accessedAtLabel       = "accessed_at"
+)
+
+func (l *AccessLog) writeLTSV(w io.Writer) error {
+	_, err := fmt.Fprintf(w, "%s:%s\t%s:%s\t%s:%d\t%s:%d\t%s:%d\t%s:%s\n",
+		methodLabel, l.Method,
+		pathLabel, l.Path,
+		statusLabel, l.Status,
+		responseBodySizeLabel, l.ResponseBodySize,
+		responseTimeLabel, l.ResponseTime.Nanoseconds(),
+		accessedAtLabel, l.AccessedAt.String(),
+	)
+	return errors.Wrap(err, "failed to write accesslog as ltsv")
 }
+
+type Handler struct {
+	mu             sync.Mutex
+	accessLogs     []*AccessLog
+	Handler        http.Handler
+	ReportPath     string
+	LogFile        string
+	FlushThreshold int
+}
+
+const (
+	DefaultFlushThreshold = 1000
+)
 
 func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if a.ReportPath != "" && r.URL.Path == a.ReportPath {
@@ -53,6 +84,9 @@ func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l.ResponseBodySize = wrapped.writtenSize
 	a.mu.Lock()
 	a.accessLogs = append(a.accessLogs, l)
+	if len(a.accessLogs) > a.FlushThreshold || a.FlushThreshold == 0 && len(a.accessLogs) > DefaultFlushThreshold {
+		go a.flushLogs()
+	}
 	a.mu.Unlock()
 }
 
@@ -64,6 +98,7 @@ func (a *Handler) Count() int {
 }
 
 func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
+	a.flushLogs()
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -136,4 +171,33 @@ func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}
+}
+
+func (a *Handler) flushLogs() (err error) {
+	if a.LogFile == "" {
+		return nil
+	}
+
+	a.mu.Lock()
+	logs := a.accessLogs
+	a.accessLogs = nil
+	a.mu.Unlock()
+
+	f, err := os.OpenFile(a.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return errors.Wrap(err, "failed to open log file")
+	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+
+	for _, l := range logs {
+		if err := l.writeLTSV(f); err != nil {
+			return err
+		}
+	}
+
+	return err
 }
