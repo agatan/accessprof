@@ -47,63 +47,27 @@ func (l *AccessLog) writeLTSV(w io.Writer) error {
 	return errors.Wrap(err, "failed to write accesslog as ltsv")
 }
 
-type Handler struct {
+type AccessProf struct {
 	mu         sync.Mutex
 	accessLogs []*AccessLog
-	// Handler is the base handler to wrap
-	Handler http.Handler
-	// ReportPath is a path of HTML reporting endpoint (ignored if empty)
-	ReportPath string
 	// LogFile is a filepath of the log file. (if empty, accessprof holds all logs on memory)
 	LogFile        string
 	FlushThreshold int
 	flushMu        sync.Mutex
 }
 
-const (
-	DefaultFlushThreshold = 1000
-)
-
-func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if a.ReportPath != "" && r.URL.Path == a.ReportPath {
-		if r.Method == http.MethodDelete {
-			a.Reset()
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		if r.Method == http.MethodGet {
-			a.serveReportRequest(w, r)
-			return
-		}
-	}
-	l := &AccessLog{
-		Method:          r.Method,
-		Path:            r.URL.Path,
-		RequestBodySize: r.ContentLength,
-		AccessedAt:      time.Now(),
-	}
-	start := time.Now()
-	wrapped := responseWriter{w: w}
-	a.Handler.ServeHTTP(&wrapped, r)
-	l.ResponseTime = time.Now().Sub(start)
-	l.Status = wrapped.status
-	l.ResponseBodySize = wrapped.writtenSize
-	a.mu.Lock()
-	a.accessLogs = append(a.accessLogs, l)
-	if len(a.accessLogs) > a.FlushThreshold || a.FlushThreshold == 0 && len(a.accessLogs) > DefaultFlushThreshold {
-		go a.flushLogs()
-	}
-	a.mu.Unlock()
+func (a *AccessProf) Wrap(h http.Handler, reportPath string) *Handler {
+	return &Handler{Handler: h, ReportPath: reportPath, AccessProf: a}
 }
 
-func (a *Handler) Count() int {
+func (a *AccessProf) Count() int {
 	a.mu.Lock()
 	n := len(a.accessLogs)
 	a.mu.Unlock()
 	return n
 }
 
-func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
+func (a *AccessProf) Report(aggregates []*regexp.Regexp) *Report {
 	a.flushLogs()
 	logs, err := a.LoadAccessLogs()
 	if err != nil {
@@ -151,41 +115,13 @@ func (a *Handler) Report(aggregates []*regexp.Regexp) *Report {
 	return &Report{Segments: segs, Aggregates: aggregates, Since: since}
 }
 
-func (a *Handler) Reset() {
+func (a *AccessProf) Reset() {
 	a.mu.Lock()
 	a.accessLogs = a.accessLogs[:0]
 	a.mu.Unlock()
 }
 
-func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
-	if err := r.Body.Close(); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	aggparam := r.URL.Query().Get("agg")
-	var aggs []*regexp.Regexp
-	if aggparam != "" {
-		for _, agg := range strings.Split(aggparam, ",") {
-			re, err := regexp.Compile(agg)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				body, _ := json.Marshal(map[string]string{
-					"error": fmt.Sprintf("failed to compile regexp %q: %v", re, err),
-				})
-				w.Write(body)
-				return
-			}
-			aggs = append(aggs, re)
-		}
-	}
-	if err := a.Report(aggs).RenderHTML(w, a.ReportPath); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-	}
-}
-
-func (a *Handler) flushLogs() (err error) {
+func (a *AccessProf) flushLogs() (err error) {
 	if a.LogFile == "" {
 		return nil
 	}
@@ -216,7 +152,7 @@ func (a *Handler) flushLogs() (err error) {
 	return err
 }
 
-func (a *Handler) LoadAccessLogs() ([]*AccessLog, error) {
+func (a *AccessProf) LoadAccessLogs() ([]*AccessLog, error) {
 	if a.LogFile == "" {
 		return nil, nil
 	}
@@ -299,4 +235,76 @@ func parseLTSV(s string) (*AccessLog, error) {
 		return nil, errors.New("missing accessed_at label")
 	}
 	return l, nil
+}
+
+type Handler struct {
+	// Handler is the base handler to wrap
+	Handler http.Handler
+	// ReportPath is a path of HTML reporting endpoint (ignored if empty)
+	ReportPath string
+	*AccessProf
+}
+
+const (
+	DefaultFlushThreshold = 1000
+)
+
+func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if a.ReportPath != "" && r.URL.Path == a.ReportPath {
+		if r.Method == http.MethodDelete {
+			a.Reset()
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method == http.MethodGet {
+			a.serveReportRequest(w, r)
+			return
+		}
+	}
+	l := &AccessLog{
+		Method:          r.Method,
+		Path:            r.URL.Path,
+		RequestBodySize: r.ContentLength,
+		AccessedAt:      time.Now(),
+	}
+	start := time.Now()
+	wrapped := responseWriter{w: w}
+	a.Handler.ServeHTTP(&wrapped, r)
+	l.ResponseTime = time.Now().Sub(start)
+	l.Status = wrapped.status
+	l.ResponseBodySize = wrapped.writtenSize
+	a.mu.Lock()
+	a.accessLogs = append(a.accessLogs, l)
+	if len(a.accessLogs) > a.FlushThreshold || a.FlushThreshold == 0 && len(a.accessLogs) > DefaultFlushThreshold {
+		go a.flushLogs()
+	}
+	a.mu.Unlock()
+}
+
+func (a *Handler) serveReportRequest(w http.ResponseWriter, r *http.Request) {
+	if err := r.Body.Close(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	aggparam := r.URL.Query().Get("agg")
+	var aggs []*regexp.Regexp
+	if aggparam != "" {
+		for _, agg := range strings.Split(aggparam, ",") {
+			re, err := regexp.Compile(agg)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				body, _ := json.Marshal(map[string]string{
+					"error": fmt.Sprintf("failed to compile regexp %q: %v", re, err),
+				})
+				w.Write(body)
+				return
+			}
+			aggs = append(aggs, re)
+		}
+	}
+	if err := a.Report(aggs).RenderHTML(w, a.ReportPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
 }

@@ -156,10 +156,10 @@ func (r *Report) RenderHTML(w io.Writer, reportPath string) error {
 			seg.Method,
 			seg.AggregationPath(),
 			strconv.Itoa(seg.Count()),
-			seg.MinResponseTime().String(),
-			seg.MaxResponseTime().String(),
-			seg.SumResponseTime().String(),
-			seg.AvgResponseTime().String(),
+			stringifyDuration(seg.MinResponseTime()),
+			stringifyDuration(seg.MaxResponseTime()),
+			stringifyDuration(seg.SumResponseTime()),
+			stringifyDuration(seg.AvgResponseTime()),
 			strconv.Itoa(seg.MinBody()),
 			strconv.Itoa(seg.MaxBody()),
 			strconv.Itoa(seg.SumBody()),
@@ -182,11 +182,17 @@ var tmpl = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://cdn.datatables.net/t/bs-3.3.6/jqc-1.12.0,dt-1.10.11/datatables.min.css"/>
-    <script src="https://cdn.datatables.net/t/bs-3.3.6/jqc-1.12.0,dt-1.10.11/datatables.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs-3.3.7/jq-3.2.1/dt-1.10.16/datatables.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs-3.3.7/jq-3.2.1/dt-1.10.16/datatables.min.js"></script>
+    <script type="text/javascript" src="//cdn.datatables.net/plug-ins/1.10.16/sorting/numeric-comma.js"></script>
     <script>
-      jQuery(function($){
-        $("#profile-table").DataTable();
+      $(document).ready(function() {
+        $("#profile-table").DataTable({
+          columnDefs: [
+            { type: 'numeric-comma', targets: [3, 4, 5 ,6, 7, 8, 9, 10, 11] }
+          ]
+        });
+
         $("#reset-button").on("click", function() {
           $.ajax({
               url: "{{ .ReportPath }}",
@@ -239,3 +245,8 @@ var tmpl = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
   </body>
 </html>
 `))
+
+func stringifyDuration(d time.Duration) string {
+	nanos := d.Nanoseconds()
+	return strconv.FormatFloat(float64(nanos)/1000000, 'f', 3, 64) + "ms"
+}

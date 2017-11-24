@@ -18,7 +18,8 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 })
 
 func main() {
-	handler := &accessprof.Handler{Handler: exampleHandler}
+	var a accessprof.AccessProf
+	handler := a.Wrap(exampleHandler, "")
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
