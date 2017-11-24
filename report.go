@@ -189,16 +189,16 @@ var tmpl = template.Must(template.New("accessprof").Parse(`<!DOCTYPE html>
         $("#profile-table").DataTable();
         $("#reset-button").on("click", function() {
           $.ajax({
-			  url: "{{ .ReportPath }}",
-			  type: "DELETE",
-		  })
-		  .done(function(data) {
-			  alert('OK');
-			  location.reload();
-		  })
-		  .fail(function() {
-			  alert('Failed to reset logs');
-		  });
+              url: "{{ .ReportPath }}",
+              type: "DELETE",
+          })
+          .done(function(data) {
+              alert('OK');
+              location.reload();
+          })
+          .fail(function() {
+              alert('Failed to reset logs');
+          });
         });
       });
     </script>
