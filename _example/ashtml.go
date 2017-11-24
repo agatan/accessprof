@@ -16,6 +16,8 @@ var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 
 func main() {
 	handler := &accessprof.Handler{Handler: exampleHandler, ReportPath: "/accessprof"}
+	// If you want to save memory, use LogFile to dump logs to the file.
+	// handler := &accessprof.Handler{Handler: exampleHandler, ReportPath: "/accessprof", LogFile: "accessprof.ltsv"}
 
 	if err := http.ListenAndServe(":8080", handler); err != nil {
 		panic(err)
