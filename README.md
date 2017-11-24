@@ -10,3 +10,8 @@ go get github.com/agatan/accessprof
 ## Example
 
 See `_example/`.
+
+```go
+var prof accessprof.AccessProf
+http.ListenAndServe(prof.Wrap(yourHandler, "/accessprof"))
+```
