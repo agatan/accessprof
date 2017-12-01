@@ -13,12 +13,6 @@ import (
 	"github.com/agatan/timejump"
 )
 
-var exampleHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(fmt.Sprintf("Path: %s\n", r.URL.Path)))
-	io.Copy(w, r.Body)
-	r.Body.Close()
-})
-
 func Example() {
 	// Use timejump package to mock `time.Now`.
 	timejump.Activate()
@@ -27,6 +21,12 @@ func Example() {
 	timejump.Jump(time.Date(2017, 12, 2, 0, 0, 0, 0, time.UTC))
 
 	var a accessprof.AccessProf
+	exampleHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("Path: %s\n", r.URL.Path)))
+		io.Copy(w, r.Body)
+		r.Body.Close()
+	})
+
 	handler := a.Wrap(exampleHandler, "")
 	server := httptest.NewServer(handler)
 	defer server.Close()
