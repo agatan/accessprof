@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/agatan/timejump"
 	"github.com/pkg/errors"
 )
 
@@ -270,12 +271,12 @@ func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Method:          r.Method,
 		Path:            r.URL.Path,
 		RequestBodySize: r.ContentLength,
-		AccessedAt:      time.Now(),
+		AccessedAt:      timejump.Now(),
 	}
-	start := time.Now()
+	start := timejump.Now()
 	wrapped := responseWriter{w: w}
 	a.Handler.ServeHTTP(&wrapped, r)
-	l.ResponseTime = time.Now().Sub(start)
+	l.ResponseTime = timejump.Now().Sub(start)
 	l.Status = wrapped.status
 	l.ResponseBodySize = wrapped.writtenSize
 	a.mu.Lock()
